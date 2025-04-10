@@ -200,7 +200,7 @@ chatRef.on("child_added", snap => {
   deleteBtn.className = "delete-btn";
   deleteBtn.onclick = () => {
     const pass = prompt("Enter admin delete code or your name to delete:");
-    if (pass === "4321" || pass === data.name) {
+    if (pass === "1234" || pass === data.name) {
       snap.ref.remove(); wrapper.remove();
     }
   };
@@ -214,7 +214,7 @@ chatRef.on("child_added", snap => {
 
 function checkPassword() {
   const pass = document.getElementById("roomPass").value;
-  if (pass === "1234") {
+  if (pass === "4321") {
     overlay.style.display = "none";
     nameOverlay.style.display = "flex";
   } else alert("Wrong password!");
