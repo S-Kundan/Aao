@@ -1,7 +1,8 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Secure Chat Room</title>
+  <title>Private Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -9,52 +10,63 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #1e1e1e;
+      background: #1e1e1e; /* Dark Background */
       color: white;
       margin: 0;
       padding: 10px;
     }
     #chatbox {
-      height: 40vh;
+      height: 50vh;
       overflow-y: auto;
       background: #2b2b2b;
       padding: 10px;
       border-radius: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #444;
     }
     .msg-wrapper {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      position: relative;
     }
     .msg {
-      padding: 6px 10px;
+      padding: 8px 12px;
       background: #3b3b3b;
       border-radius: 8px;
       flex-grow: 1;
       word-break: break-word;
+      font-size: 15px;
+      line-height: 1.4;
     }
     .username {
       font-weight: bold;
-      margin-right: 6px;
       color: #81d4fa;
+      font-size: 0.9em;
+      display: block;
+      margin-bottom: 2px;
     }
     .delete-btn {
-      width: 28px;
-      height: 28px;
-      background: #aaa;
+      min-width: 25px;
+      height: 25px;
+      background: #555;
+      color: white;
       border: none;
       border-radius: 50%;
       cursor: pointer;
-      margin-left: 6px;
+      margin-right: 8px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #message {
-      width: calc(100% - 80px);
-      padding: 10px;
-      background-color: white;
+      width: calc(100% - 90px);
+      padding: 12px;
+      background-color: #333;
       color: white;
       border-radius: 20px;
-      border: none;
+      border: 1px solid #555;
       outline: none;
     }
     #controls {
@@ -65,78 +77,118 @@
     #upload {
       background: transparent;
       border: none;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
-      margin-left: -35px;
+      margin-left: -40px;
+      z-index: 5;
     }
     #send {
-      padding: 8px 16px;
+      padding: 10px 20px;
       margin-left: 10px;
       background: #4caf50;
       color: white;
       border: none;
       border-radius: 20px;
       cursor: pointer;
+      font-weight: bold;
     }
+    
+    /* === UPDATE 1: Invisible Buttons === */
+    #clearBtn {
+      background: #1e1e1e; /* Background se match */
+      color: #1e1e1e;      /* Text bhi invisible */
+      border: none;
+      padding: 8px 15px;
+      margin-top: 10px;
+      cursor: pointer;
+      float: right;
+    }
+    /* Hover karne par thoda sa dikhega taaki aap dhoond sako */
+    #clearBtn:hover {
+      color: #333;
+    }
+
     #decodeBtn {
       position: fixed;
-      bottom: 10px;
-      left: 10px;
-      width: 50px;
-      height: 50px;
-      background:green;
-      border-radius: 50%;
+      bottom: 20px;
+      left: 20px;
+      width: 60px;
+      height: 60px;
+      background: #1e1e1e; /* Background se match */
+      color: #222;         /* Icon almost invisible */
       border: none;
+      border-radius: 50%;
       z-index: 1000;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
     }
+    #decodeBtn::after {
+      content: "🔓";
+    }
+    #decodeBtn:active {
+      background: #252525; /* Click karne par thoda pata chale */
+    }
+    
     #overlay, #nameOverlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: #000a;
+      background: rgba(0, 0, 0, 0.95);
       color: white;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 10;
+      z-index: 2000;
     }
-    #clearBtn {
-      background:red;
-      color: white;
-      border: none;
-      padding: 8px 10px;
+    input[type="password"], input[type="text"] {
+      padding: 10px;
       border-radius: 5px;
+      border: none;
       margin-top: 10px;
     }
     #userList {
       margin-top: 10px;
       font-size: 14px;
-      color: lightgreen;
+      color: #444; /* User list bhi dark kar diya */
+      clear: both;
     }
   </style>
 </head>
 <body>
+
   <div id="overlay">
-    <h2></h2>
-    <input type="password" id="roomPass" placeholder="Enter Password">
-    <button onclick="checkPassword()">Enter</button>
+    <h2>Login</h2>
+    <input type="password" id="roomPass" placeholder="Password (4321)">
+    <button onclick="checkPassword()" style="margin-top:10px;">Enter</button>
   </div>
+
   <div id="nameOverlay" style="display:none;">
-    <h2></h2>
-    <input type="text" id="username" placeholder="Your Name">
-    <button onclick="saveUsername()">Start</button>
+    <h2>Identity</h2>
+    <input type="text" id="username" placeholder="Name">
+    <button onclick="saveUsername()" style="margin-top:10px;">Start</button>
   </div>
+
   <div id="chatbox"></div>
+
   <div id="controls">
-    <input type="text" id="message" placeholder="Type a message">
+    <input type="text" id="message" placeholder="Type here..." autocomplete="off">
     <button id="upload">📎</button>
     <button id="send">Send</button>
   </div>
+  
   <input type="file" id="fileInput" style="display:none;">
+  
   <button id="clearBtn" onclick="clearChat()">Clear</button>
-  <div id="userList"><b>Active Users:</b> <span id="activeUsers"></span></div>
+  
+  <div id="userList"><span id="activeUsers"></span></div>
+  
   <button id="decodeBtn"></button>
-  <audio id="notifSound" src="https://notificationsounds.com/notification-sounds/event-538/download/mp3" preload="auto"></audio><script>
+  <audio id="notifSound" src="https://notificationsounds.com/notification-sounds/event-538/download/mp3" preload="auto"></audio>
+
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyCbQLA5TlFk3zcNoRwLVDMRS0M_WT9uXkQ",
   authDomain: "chat-karona.firebaseapp.com",
@@ -144,79 +196,155 @@ const firebaseConfig = {
   projectId: "chat-karona",
   storageBucket: "chat-karona.firebasestorage.app",
   messagingSenderId: "74516798409",
-  appId: "1:74516798409:web:7c7ed192a5ac64ad466618",
-  measurementId: "G-36HW4WQ5P5"
+  appId: "1:74516798409:web:7c7ed192a5ac64ad466618"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
 const storage = firebase.storage();
 const chatRef = db.ref("messages");
 const usersRef = db.ref("activeUsers");
 
 let currentUser = "";
-let decodeHeld = false;
 
-const codeMap = {
-  a: "🍎", b: "🐝", c: "🐱", d: "🐶", e: "🥚", f: "🐸", g: "🦍", h: "🏠", i: "🍦", j: "😂",
-  k: "🎋", l: "🦁", m: "🐵", n: "🌃", o: "🐙", p: "🥞", q: "👸", r: "🤖", s: "🐍", t: "🌴",
-  u: "🦄", v: "🎻", w: "🌊", x: "❌", y: "☯", z: "⚡",
-  A: "🍏", B: "🐛", C: "🐈", D: "🦖", E: "🦄", F: "🐬", G: "🦧", H: "🏡", I: "🍨", J: "🤣",
-  K: "🎄", L: "🦓", M: "🦣", N: "🌌", O: "🦑", P: "🍕", Q: "👑", R: "🧠", S: "🦂", T: "🌲",
-  U: "🛸", V: "🎮", W: "🌪", X: "✖", Y: "🪀", Z: "🌀",
-  "0": "0️⃣", "1": "1️⃣", "2": "2️⃣", "3": "3️⃣", "4": "4️⃣", "5": "5️⃣", "6": "6️⃣", "7": "7️⃣", "8": "8️⃣", "9": "9️⃣",
-  " ": "⬜", ".": "💥", ",": "💫", "!": "🎉", "?": "❓", "@": "📡", "#": "🎯", "$": "💰", "%": "🪙", "&": "🫱"
-};
-
-function encode(text) {
-  return text.split('').map(ch => codeMap[ch] || ch).join('');
-}
-
+// 1. Sending Messages (Changed to "Hello how r u")
 document.getElementById("send").onclick = sendMessage;
+document.getElementById("message").addEventListener("keypress", function(event) {
+  if (event.key === "Enter") sendMessage();
+});
+
 function sendMessage() {
-  const real = message.value.trim();
+  const real = document.getElementById("message").value.trim();
   if (!real || !currentUser) return;
-  const encoded = encode(real);
-  chatRef.push({ name: currentUser, encoded, original: real });
-  message.value = "";
+  
+  // === UPDATE 2: Decoy Message ===
+  // Asli text "original" mein jayega, par dikhega "Hello how r u"
+  const fakeMessage = "Hello how r u"; 
+  
+  chatRef.push({ 
+    name: currentUser, 
+    encoded: fakeMessage, 
+    original: real, 
+    type: 'text' 
+  });
+  
+  document.getElementById("message").value = "";
 }
 
+// 2. Receiving Messages
 chatRef.on("child_added", snap => {
   const data = snap.val();
   const wrapper = document.createElement("div");
   wrapper.className = "msg-wrapper";
 
-  const msgDiv = document.createElement("div");
-  msgDiv.className = "msg";
-  const nameSpan = document.createElement("span");
-  nameSpan.className = "username";
-  nameSpan.textContent = `[${data.name}] `;
-  msgDiv.dataset.original = data.original;
-  msgDiv.dataset.encoded = data.encoded;
-  msgDiv.textContent = decodeHeld ? data.original : data.encoded;
-  msgDiv.prepend(nameSpan);
-
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "delete-btn";
+  deleteBtn.innerHTML = "x";
   deleteBtn.onclick = () => {
-    const pass = prompt("Enter admin delete code or your name to delete:");
+    const pass = prompt("Delete? Enter '1234' or your name:");
     if (pass === "1234" || pass === data.name) {
-      snap.ref.remove(); wrapper.remove();
+      snap.ref.remove(); 
+      wrapper.remove();
     }
   };
 
+  const msgDiv = document.createElement("div");
+  msgDiv.className = "msg";
+  
+  msgDiv.dataset.original = data.original;
+  msgDiv.dataset.encoded = data.encoded;
+  msgDiv.dataset.type = data.type || 'text';
+
+  const nameSpan = document.createElement("span");
+  nameSpan.className = "username";
+  nameSpan.textContent = `[${data.name}]`;
+  
+  const contentSpan = document.createElement("div");
+  contentSpan.className = "msg-content";
+  contentSpan.textContent = data.encoded; // Shows "Hello how r u"
+
+  msgDiv.appendChild(nameSpan);
+  msgDiv.appendChild(contentSpan);
+
   wrapper.appendChild(deleteBtn);
   wrapper.appendChild(msgDiv);
+  
   document.getElementById("chatbox").appendChild(wrapper);
-  chatbox.scrollTop = chatbox.scrollHeight;
-  document.getElementById("notifSound").play();
+  document.getElementById("chatbox").scrollTop = document.getElementById("chatbox").scrollHeight;
+  
+  if (data.name !== currentUser) {
+      document.getElementById("notifSound").play().catch(e => {});
+  }
 });
+
+// 3. Decoding Logic
+const decodeBtn = document.getElementById("decodeBtn");
+
+const updateMessages = (showOriginal) => {
+  document.querySelectorAll(".msg").forEach(msg => {
+    const contentSpan = msg.querySelector(".msg-content");
+    const type = msg.dataset.type;
+    const original = msg.dataset.original;
+    const encoded = msg.dataset.encoded;
+
+    if (showOriginal) {
+      // Show Real Message
+      if (type === 'image') {
+        contentSpan.innerHTML = `<br><img src="${original}" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
+      } else if (type === 'link') {
+        contentSpan.innerHTML = `<br><a href="${original}" target="_blank" style="color:#81d4fa">Download File</a>`;
+      } else {
+        contentSpan.innerText = original;
+      }
+      contentSpan.style.color = "#4caf50";
+    } else {
+      // Show Fake Message (Hello how r u)
+      contentSpan.innerText = encoded;
+      contentSpan.style.color = "white";
+    }
+  });
+};
+
+decodeBtn.onmousedown = decodeBtn.ontouchstart = (e) => {
+  e.preventDefault();
+  updateMessages(true);
+};
+
+decodeBtn.onmouseup = decodeBtn.ontouchend = decodeBtn.onmouseleave = () => {
+  updateMessages(false);
+};
+
+// 4. File Upload
+document.getElementById("upload").onclick = () => document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange = e => {
+  const file = e.target.files[0];
+  if (!file || !currentUser) return;
+  
+  const filePath = `uploads/${Date.now()}_${file.name}`;
+  const uploadTask = storage.ref(filePath).put(file);
+
+  uploadTask.then(snapshot => {
+    snapshot.ref.getDownloadURL().then(url => {
+      const isImage = file.type.startsWith("image/");
+      const fakeText = "Hello how r u"; // Even files look like this text
+      
+      chatRef.push({ 
+        name: currentUser, 
+        encoded: fakeText, 
+        original: url, 
+        type: isImage ? 'image' : 'link' 
+      });
+    });
+  }).catch(error => alert("Upload failed: " + error.message));
+};
 
 function checkPassword() {
   const pass = document.getElementById("roomPass").value;
   if (pass === "4321") {
-    overlay.style.display = "none";
-    nameOverlay.style.display = "flex";
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("nameOverlay").style.display = "flex";
   } else alert("Wrong password!");
 }
 
@@ -224,62 +352,24 @@ function saveUsername() {
   const name = document.getElementById("username").value.trim();
   if (name) {
     currentUser = name;
-    nameOverlay.style.display = "none";
+    document.getElementById("nameOverlay").style.display = "none";
     usersRef.child(name).set(true);
     usersRef.child(name).onDisconnect().remove();
   } else alert("Enter your name!");
 }
 
 function clearChat() {
-  const pass = prompt("Enter admin delete code:");
+  const pass = prompt("Admin Code:");
   if (pass === "1234") {
     chatRef.remove();
-    chatbox.innerHTML = "";
+    document.getElementById("chatbox").innerHTML = "";
   }
 }
 
-document.getElementById("upload").onclick = () => fileInput.click();
-fileInput.onchange = e => {
-  const file = e.target.files[0];
-  if (!file || !currentUser) return;
-  const filePath = `uploads/${Date.now()}_${file.name}`;
-  const uploadTask = storage.ref(filePath).put(file);
-
-  uploadTask.then(snapshot => {
-    snapshot.ref.getDownloadURL().then(url => {
-      const isImage = file.type.startsWith("image/");
-      const encoded = encode(`[${file.name}]`);
-      const original = isImage ? `<img src="${url}" style="max-width:200px;">` : `<a href="${url}" target="_blank">${file.name}</a>`;
-      chatRef.push({ name: currentUser, encoded, original });
-    });
-  }).catch(error => {
-    alert("Upload failed: " + error.message);
-  });
-};
-
 usersRef.on("value", snap => {
   const users = snap.val() || {};
-  activeUsers.textContent = Object.keys(users).join(", ");
+  document.getElementById("activeUsers").textContent = Object.keys(users).join(", ");
 });
-
-decodeBtn.onmousedown = decodeBtn.ontouchstart = () => {
-  decodeHeld = true;
-  document.querySelectorAll(".msg").forEach(msg => {
-    const username = msg.querySelector(".username");
-    msg.innerHTML = "";
-    msg.appendChild(username);
-    msg.append(" " + msg.dataset.original);
-  });
-};
-
-decodeBtn.onmouseup = decodeBtn.ontouchend = () => {
-  decodeHeld = false;
-  document.querySelectorAll(".msg").forEach(msg => {
-    const username = msg.querySelector(".username");
-    msg.innerHTML = "";
-    msg.appendChild(username);
-    msg.append(" " + msg.dataset.encoded);
-  });
-};
-</script></body>
+</script>
+</body>
 </html>
