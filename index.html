@@ -1,285 +1,277 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Secure Chat Room</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #1e1e1e;
-      color: white;
-      margin: 0;
-      padding: 10px;
-    }
-    #chatbox {
-      height: 40vh;
-      overflow-y: auto;
-      background: #2b2b2b;
-      padding: 10px;
-      border-radius: 10px;
-    }
-    .msg-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .msg {
-      padding: 6px 10px;
-      background: #3b3b3b;
-      border-radius: 8px;
-      flex-grow: 1;
-      word-break: break-word;
-    }
-    .username {
-      font-weight: bold;
-      margin-right: 6px;
-      color: #81d4fa;
-    }
-    .delete-btn {
-      width: 28px;
-      height: 28px;
-      background: #aaa;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      margin-left: 6px;
-    }
-    #message {
-      width: calc(100% - 80px);
-      padding: 10px;
-      background-color: white;
-      color: white;
-      border-radius: 20px;
-      border: none;
-      outline: none;
-    }
-    #controls {
-      display: flex;
-      align-items: center;
-      margin-top: 10px;
-    }
-    #upload {
-      background: transparent;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-      margin-left: -35px;
-    }
-    #send {
-      padding: 8px 16px;
-      margin-left: 10px;
-      background: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-    }
-    #decodeBtn {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      width: 50px;
-      height: 50px;
-      background:green;
-      border-radius: 50%;
-      border: none;
-      z-index: 1000;
-    }
-    #overlay, #nameOverlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: #000a;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-    }
-    #clearBtn {
-      background:red;
-      color: white;
-      border: none;
-      padding: 8px 10px;
-      border-radius: 5px;
-      margin-top: 10px;
-    }
-    #userList {
-      margin-top: 10px;
-      font-size: 14px;
-      color: lightgreen;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1e1e1e; color: white; margin: 0; padding: 10px; }
+        #chatbox { height: 65vh; overflow-y: auto; background: #2b2b2b; padding: 10px; border-radius: 10px; }
+        .msg-wrapper { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+        .msg { padding: 8px 12px; background: #3b3b3b; border-radius: 8px; flex-grow: 1; word-break: break-word; position: relative; }
+        .username { font-weight: bold; margin-right: 6px; color: #81d4fa; }
+        
+        .timestamp { display: block; font-size: 10px; color: #aaa; text-align: right; margin-top: 4px; }
+        
+        .delete-btn { width: 28px; height: 28px; background: #aaa; border: none; border-radius: 50%; cursor: pointer; margin-left: 6px; margin-top: 5px; }
+        
+        /* Message Box Styling */
+        #message { flex-grow: 1; padding: 10px; background-color: white; color: white; border-radius: 20px; border: none; outline: none; }
+        
+        #controls { display: flex; align-items: center; margin-top: 10px; }
+        #upload { background: transparent; border: none; font-size: 18px; cursor: pointer; margin-left: -35px; z-index: 5; }
+        
+        /* Green Send Button (Right Side) */
+        #send { 
+            width: 40px; 
+            height: 40px; 
+            background: #4caf50; 
+            border: none; 
+            border-radius: 50%; 
+            margin-left: 10px; 
+            cursor: pointer;
+            flex-shrink: 0; 
+        }
+
+        /* Red Clear Button (Left Side) */
+        #clearBtn { 
+            width: 40px; 
+            height: 40px; 
+            background: red; 
+            border: none; 
+            border-radius: 50%; 
+            margin-right: 10px; 
+            cursor: pointer; 
+            flex-shrink: 0;
+        }
+        
+        #decodeBtn { position: fixed; bottom: 10px; left: 10px; width: 50px; height: 50px; background:#1e1e1e; border-radius: 50%; border: none; z-index: 1000; }
+        #overlay, #nameOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000a; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+        
+        #userList { margin-top: 10px; font-size: 14px; color: lightgreen; }
+    </style>
 </head>
 <body>
-  <div id="overlay">
-    <h2></h2>
-    <input type="password" id="roomPass" placeholder="Enter Password">
-    <button onclick="checkPassword()">Enter</button>
-  </div>
-  <div id="nameOverlay" style="display:none;">
-    <h2></h2>
-    <input type="text" id="username" placeholder="Your Name">
-    <button onclick="saveUsername()">Start</button>
-  </div>
-  <div id="chatbox"></div>
-  <div id="controls">
-    <input type="text" id="message" placeholder="Type a message">
-    <button id="upload">📎</button>
-    <button id="send">Send</button>
-  </div>
-  <input type="file" id="fileInput" style="display:none;">
-  <button id="clearBtn" onclick="clearChat()">Clear</button>
-  <div id="userList"><b>Active Users:</b> <span id="activeUsers"></span></div>
-  <button id="decodeBtn"></button>
-  <audio id="notifSound" src="https://notificationsounds.com/notification-sounds/event-538/download/mp3" preload="auto"></audio><script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCbQLA5TlFk3zcNoRwLVDMRS0M_WT9uXkQ",
-  authDomain: "chat-karona.firebaseapp.com",
-  databaseURL: "https://chat-karona-default-rtdb.firebaseio.com",
-  projectId: "chat-karona",
-  storageBucket: "chat-karona.firebasestorage.app",
-  messagingSenderId: "74516798409",
-  appId: "1:74516798409:web:7c7ed192a5ac64ad466618",
-  measurementId: "G-36HW4WQ5P5"
-};
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const storage = firebase.storage();
-const chatRef = db.ref("messages");
-const usersRef = db.ref("activeUsers");
+    <div id="overlay">
+        <h3>Enter Room Password</h3>
+        <input type="password" id="roomPass" placeholder="Enter Password">
+        <button onclick="checkPassword()" style="margin-top:10px;">Enter</button>
+    </div>
 
-let currentUser = "";
-let decodeHeld = false;
+    <div id="nameOverlay" style="display: none;">
+        <h3>Enter Your Name</h3>
+        <input type="text" id="username" placeholder="Name">
+        <button onclick="saveUsername()" style="margin-top:10px;">Start</button>
+    </div>
 
-const codeMap = {
-  a: "🍎", b: "🐝", c: "🐱", d: "🐶", e: "🥚", f: "🐸", g: "🦍", h: "🏠", i: "🍦", j: "😂",
-  k: "🎋", l: "🦁", m: "🐵", n: "🌃", o: "🐙", p: "🥞", q: "👸", r: "🤖", s: "🐍", t: "🌴",
-  u: "🦄", v: "🎻", w: "🌊", x: "❌", y: "☯", z: "⚡",
-  A: "🍏", B: "🐛", C: "🐈", D: "🦖", E: "🦄", F: "🐬", G: "🦧", H: "🏡", I: "🍨", J: "🤣",
-  K: "🎄", L: "🦓", M: "🦣", N: "🌌", O: "🦑", P: "🍕", Q: "👑", R: "🧠", S: "🦂", T: "🌲",
-  U: "🛸", V: "🎮", W: "🌪", X: "✖", Y: "🪀", Z: "🌀",
-  "0": "0️⃣", "1": "1️⃣", "2": "2️⃣", "3": "3️⃣", "4": "4️⃣", "5": "5️⃣", "6": "6️⃣", "7": "7️⃣", "8": "8️⃣", "9": "9️⃣",
-  " ": "⬜", ".": "💥", ",": "💫", "!": "🎉", "?": "❓", "@": "📡", "#": "🎯", "$": "💰", "%": "🪙", "&": "🫱"
-};
+    <div id="chatbox"></div>
+    <div id="userList">Active Users: <span id="activeUsers"></span></div>
 
-function encode(text) {
-  return text.split('').map(ch => codeMap[ch] || ch).join('');
-}
+    <div id="controls">
+        <button id="clearBtn" onclick="clearChat()"></button>
 
-document.getElementById("send").onclick = sendMessage;
-function sendMessage() {
-  const real = message.value.trim();
-  if (!real || !currentUser) return;
-  const encoded = encode(real);
-  chatRef.push({ name: currentUser, encoded, original: real });
-  message.value = "";
-}
+        <input type="text" id="message" placeholder="Type a message...">
+        
+        <input type="file" id="fileInput" hidden>
+        <button id="upload">📎</button>
 
-chatRef.on("child_added", snap => {
-  const data = snap.val();
-  const wrapper = document.createElement("div");
-  wrapper.className = "msg-wrapper";
+        <button id="send"></button>
+    </div>
 
-  const msgDiv = document.createElement("div");
-  msgDiv.className = "msg";
-  const nameSpan = document.createElement("span");
-  nameSpan.className = "username";
-  nameSpan.textContent = `[${data.name}] `;
-  msgDiv.dataset.original = data.original;
-  msgDiv.dataset.encoded = data.encoded;
-  msgDiv.textContent = decodeHeld ? data.original : data.encoded;
-  msgDiv.prepend(nameSpan);
+    <button id="decodeBtn"></button>
+    
+    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2626/2626-preview.mp3" hidden></audio>
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "delete-btn";
-  deleteBtn.onclick = () => {
-    const pass = prompt("Enter admin delete code or your name to delete:");
-    if (pass === "1234" || pass === data.name) {
-      snap.ref.remove(); wrapper.remove();
-    }
-  };
+    <script>
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCbQLA5TlFk3zcNoRwLVDMRS0M_WT9uXkQ", 
+            authDomain: "chat-karona.firebaseapp.com", 
+            databaseURL: "https://chat-karona-default-rtdb.firebaseio.com", 
+            projectId: "chat-karona", 
+            storageBucket: "chat-karona.firebasestorage.app", 
+            messagingSenderId: "74516798409", 
+            appId: "1:74516798409:web:7c7ed192a5ac64ad466618", 
+            measurementId: "G-36HW4WQ5P5" 
+        };
 
-  wrapper.appendChild(deleteBtn);
-  wrapper.appendChild(msgDiv);
-  document.getElementById("chatbox").appendChild(wrapper);
-  chatbox.scrollTop = chatbox.scrollHeight;
-  document.getElementById("notifSound").play();
-});
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const storage = firebase.storage();
+        const chatRef = db.ref("messages");
+        const usersRef = db.ref("activeUsers");
 
-function checkPassword() {
-  const pass = document.getElementById("roomPass").value;
-  if (pass === "4321") {
-    overlay.style.display = "none";
-    nameOverlay.style.display = "flex";
-  } else alert("Wrong password!");
-}
+        let currentUser = "";
+        let decodeHeld = false;
 
-function saveUsername() {
-  const name = document.getElementById("username").value.trim();
-  if (name) {
-    currentUser = name;
-    nameOverlay.style.display = "none";
-    usersRef.child(name).set(true);
-    usersRef.child(name).onDisconnect().remove();
-  } else alert("Enter your name!");
-}
+        const codeMap = {
+            a: "🍎", b: "🐝", c: "🐱", d: "🐶", e: "🥚", f: "🐸", g: "🦍", h: "🏠", i: "🍦", j: "😂",
+            " ": "⬜" 
+        };
 
-function clearChat() {
-  const pass = prompt("Enter admin delete code:");
-  if (pass === "1234") {
-    chatRef.remove();
-    chatbox.innerHTML = "";
-  }
-}
+        function encode(text) {
+            return text.split('').map(ch => codeMap[ch] || ch).join('');
+        }
 
-document.getElementById("upload").onclick = () => fileInput.click();
-fileInput.onchange = e => {
-  const file = e.target.files[0];
-  if (!file || !currentUser) return;
-  const filePath = `uploads/${Date.now()}_${file.name}`;
-  const uploadTask = storage.ref(filePath).put(file);
+        // --- SEND MESSAGE ---
+        document.getElementById("send").onclick = sendMessage;
+        
+        document.getElementById("message").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
 
-  uploadTask.then(snapshot => {
-    snapshot.ref.getDownloadURL().then(url => {
-      const isImage = file.type.startsWith("image/");
-      const encoded = encode(`[${file.name}]`);
-      const original = isImage ? `<img src="${url}" style="max-width:200px;">` : `<a href="${url}" target="_blank">${file.name}</a>`;
-      chatRef.push({ name: currentUser, encoded, original });
-    });
-  }).catch(error => {
-    alert("Upload failed: " + error.message);
-  });
-};
+        function sendMessage() {
+            const real = message.value.trim();
+            if (!real || !currentUser) return;
+            
+            const encoded = "kya aap aur kuchh kehna chahte hen";
+            
+            const now = new Date();
+            const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-usersRef.on("value", snap => {
-  const users = snap.val() || {};
-  activeUsers.textContent = Object.keys(users).join(", ");
-});
+            chatRef.push({ 
+                name: currentUser, 
+                encoded, 
+                original: real,
+                time: timeString 
+            });
+            message.value = "";
+        }
 
-decodeBtn.onmousedown = decodeBtn.ontouchstart = () => {
-  decodeHeld = true;
-  document.querySelectorAll(".msg").forEach(msg => {
-    const username = msg.querySelector(".username");
-    msg.innerHTML = "";
-    msg.appendChild(username);
-    msg.append(" " + msg.dataset.original);
-  });
-};
+        // --- DISPLAY MESSAGE ---
+        chatRef.on("child_added", snap => {
+            const data = snap.val();
+            const wrapper = document.createElement("div");
+            wrapper.className = "msg-wrapper";
 
-decodeBtn.onmouseup = decodeBtn.ontouchend = () => {
-  decodeHeld = false;
-  document.querySelectorAll(".msg").forEach(msg => {
-    const username = msg.querySelector(".username");
-    msg.innerHTML = "";
-    msg.appendChild(username);
-    msg.append(" " + msg.dataset.encoded);
-  });
-};
-</script></body>
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "msg";
+            
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "username";
+            nameSpan.textContent = `[${data.name}] `;
+            
+            msgDiv.dataset.original = data.original;
+            msgDiv.dataset.encoded = data.encoded;
+            msgDiv.dataset.time = data.time || ""; 
+
+            msgDiv.prepend(nameSpan);
+            msgDiv.append(" " + (decodeHeld ? data.original : data.encoded));
+
+            const timeSpan = document.createElement("span");
+            timeSpan.className = "timestamp";
+            timeSpan.textContent = data.time || "";
+            msgDiv.appendChild(timeSpan);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.onclick = () => {
+                const pass = prompt("Enter admin delete code or your name to delete:");
+                if (pass === "1234" || pass === data.name) {
+                    snap.ref.remove(); wrapper.remove();
+                }
+            };
+
+            wrapper.appendChild(deleteBtn);
+            wrapper.appendChild(msgDiv);
+            document.getElementById("chatbox").appendChild(wrapper);
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            // --- SOUND LOGIC ---
+            const sound = document.getElementById("notifSound");
+            if (sound) {
+                sound.play().catch(error => {
+                    console.log("Interaction needed for sound");
+                });
+            }
+        });
+
+        function checkPassword() {
+            const pass = document.getElementById("roomPass").value;
+            if (pass === "1252") {
+                overlay.style.display = "none";
+                nameOverlay.style.display = "flex";
+            } else alert("Wrong password!");
+        }
+
+        function saveUsername() {
+            const name = document.getElementById("username").value.trim();
+            if (name) {
+                currentUser = name;
+                nameOverlay.style.display = "none";
+                usersRef.child(name).set(true);
+                usersRef.child(name).onDisconnect().remove();
+            } else alert("Enter your name!");
+        }
+
+        function clearChat() {
+            const pass = prompt("Enter admin delete code:");
+            if (pass === "1234") {
+                chatRef.remove();
+                chatbox.innerHTML = "";
+            }
+        }
+
+        document.getElementById("upload").onclick = () => fileInput.click();
+        fileInput.onchange = e => {
+            const file = e.target.files[0];
+            if (!file || !currentUser) return;
+            const filePath = `uploads/${Date.now()}_${file.name}`;
+            const uploadTask = storage.ref(filePath).put(file);
+
+            uploadTask.then(snapshot => {
+                snapshot.ref.getDownloadURL().then(url => {
+                    const isImage = file.type.startsWith("image/");
+                    const encoded = encode(`[${file.name}]`);
+                    const original = isImage ? `<img src="${url}" style="max-width:200px;">` : `<a href="${url}" target="_blank">${file.name}</a>`;
+                    
+                    const now = new Date();
+                    const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    chatRef.push({ name: currentUser, encoded, original, time: timeString });
+                });
+            }).catch(error => {
+                alert("Upload failed: " + error.message);
+            });
+        };
+
+        usersRef.on("value", snap => {
+            const users = snap.val() || {};
+            activeUsers.textContent = Object.keys(users).join(", ");
+        });
+
+        function updateMessages(showOriginal) {
+            document.querySelectorAll(".msg").forEach(msg => {
+                const username = msg.querySelector(".username");
+                const timeText = msg.dataset.time || ""; 
+
+                msg.innerHTML = ""; 
+                msg.appendChild(username); 
+                msg.append(" " + (showOriginal ? msg.dataset.original : msg.dataset.encoded)); 
+                
+                const timeSpan = document.createElement("span");
+                timeSpan.className = "timestamp";
+                timeSpan.textContent = timeText;
+                msg.appendChild(timeSpan);
+            });
+        }
+
+        decodeBtn.onmousedown = decodeBtn.ontouchstart = () => {
+            decodeHeld = true;
+            updateMessages(true); 
+        };
+
+        decodeBtn.onmouseup = decodeBtn.ontouchend = () => {
+            decodeHeld = false;
+            updateMessages(false); 
+        };
+    </script>
+</body>
 </html>
