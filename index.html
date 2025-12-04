@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,8 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1e1e1e; color: white; margin: 0; padding: 10px; }
-        #chatbox { height: 65vh; overflow-y: auto; background: #2b2b2b; padding: 10px; border-radius: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1e1e1e; color: white; margin: 0; padding: 10px; overflow-x: hidden; }
+        #chatbox { height: 65vh; overflow-y: auto; background: #2b2b2b; padding: 10px; border-radius: 10px; position: relative; z-index: 1; }
         .msg-wrapper { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
         .msg { padding: 8px 12px; background: #3b3b3b; border-radius: 8px; flex-grow: 1; word-break: break-word; position: relative; }
         .username { font-weight: bold; margin-right: 6px; color: #81d4fa; }
@@ -22,8 +22,8 @@
         /* Message Box Styling */
         #message { flex-grow: 1; padding: 10px; background-color: white; color: white; border-radius: 20px; border: none; outline: none; }
         
-        #controls { display: flex; align-items: center; margin-top: 10px; }
-        #upload { background: transparent; border: none; font-size: 18px; cursor: pointer; margin-left: -35px; z-index: 5; }
+        #controls { display: flex; align-items: center; margin-top: 10px; position: relative; z-index: 5; }
+        #upload { background: transparent; border: none; font-size: 18px; cursor: pointer; margin-left: -35px; z-index: 6; }
         
         /* Green Send Button (Right Side) */
         #send { 
@@ -34,8 +34,10 @@
             border-radius: 50%; 
             margin-left: 10px; 
             cursor: pointer;
-            flex-shrink: 0; 
+            flex-shrink: 0;
+            transition: transform 0.1s; 
         }
+        #send:active { transform: scale(0.9); }
 
         /* Red Clear Button (Left Side) */
         #clearBtn { 
@@ -50,9 +52,24 @@
         }
         
         #decodeBtn { position: fixed; bottom: 10px; left: 10px; width: 50px; height: 50px; background:#1e1e1e; border-radius: 50%; border: none; z-index: 1000; }
-        #overlay, #nameOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000a; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+        #overlay, #nameOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000a; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
         
         #userList { margin-top: 10px; font-size: 14px; color: lightgreen; }
+
+        /* === ROCKET ANIMATION STYLES === */
+        .rocket {
+            position: fixed;
+            bottom: 60px;
+            font-size: 30px;
+            pointer-events: none;
+            z-index: 9999;
+            animation: flyUp 1.5s ease-out forwards;
+        }
+
+        @keyframes flyUp {
+            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100vh) scale(0.5) rotate(10deg); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -85,7 +102,9 @@
 
     <button id="decodeBtn"></button>
     
-    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2626/2626-preview.mp3" hidden></audio>
+    <audio id="receiveSound" src="https://actions.google.com/sounds/v1/sci_fi/beep_short.ogg" hidden></audio>
+    
+    <audio id="rocketSound" src="https://actions.google.com/sounds/v1/sci_fi/whoosh_shockwave_2.ogg" hidden></audio>
 
     <script>
         const firebaseConfig = { 
@@ -117,6 +136,35 @@
             return text.split('').map(ch => codeMap[ch] || ch).join('');
         }
 
+        // --- ROCKET FUNCTION & SOUND ---
+        function launchRockets() {
+            // Play Sending Sound (Whoosh)
+            const audio = document.getElementById("rocketSound");
+            if(audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e=>{});
+            }
+
+            // Launch 15 Rockets
+            for (let i = 0; i < 15; i++) {
+                const rocket = document.createElement("div");
+                rocket.innerText = "🚀";
+                rocket.className = "rocket";
+                
+                const randomLeft = Math.random() * window.innerWidth;
+                rocket.style.left = randomLeft + "px";
+                
+                const duration = Math.random() * 1 + 0.5; 
+                rocket.style.animationDuration = duration + "s";
+
+                document.body.appendChild(rocket);
+
+                setTimeout(() => {
+                    rocket.remove();
+                }, duration * 1000);
+            }
+        }
+
         // --- SEND MESSAGE ---
         document.getElementById("send").onclick = sendMessage;
         
@@ -128,14 +176,16 @@
         });
 
         function sendMessage() {
-            const real = message.value.trim();
+            const real = document.getElementById("message").value.trim();
             if (!real || !currentUser) return;
             
+            // Trigger Rockets & Send Sound
+            launchRockets();
+
             const encoded = "YOU ARE FEW STEPS BACK TO GET BETTER LUCK";
             
             const now = new Date();
-            // CHANGE: Added hour12: true to force AM/PM format
-            const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
+            const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
             chatRef.push({ 
                 name: currentUser, 
@@ -143,7 +193,7 @@
                 original: real,
                 time: timeString 
             });
-            message.value = "";
+            document.getElementById("message").value = "";
         }
 
         // --- DISPLAY MESSAGE ---
@@ -185,9 +235,10 @@
             document.getElementById("chatbox").appendChild(wrapper);
             chatbox.scrollTop = chatbox.scrollHeight;
 
-            // --- SOUND LOGIC ---
-            const sound = document.getElementById("notifSound");
-            if (sound) {
+            // --- RECEIVE SOUND LOGIC ---
+            // Sirf tab bajega jab message KISI AUR ne bheja ho
+            const sound = document.getElementById("receiveSound");
+            if (sound && data.name !== currentUser) {
                 sound.play().catch(error => {
                     console.log("Interaction needed for sound");
                 });
@@ -229,15 +280,17 @@
 
             uploadTask.then(snapshot => {
                 snapshot.ref.getDownloadURL().then(url => {
+                    
+                    launchRockets(); // Upload par bhi sound aur rocket
+
                     const isImage = file.type.startsWith("image/");
                     const encoded = encode(`[${file.name}]`);
                     const original = isImage ? `<img src="${url}" style="max-width:200px;">` : `<a href="${url}" target="_blank">${file.name}</a>`;
                     
                     const now = new Date();
-                    // CHANGE: Added hour12: true here as well
-                    const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true});
+                    const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-                    chatRef.push({ name: currentUser, encoded, original, time: timeString });
+                    chatRef.push({ name: currentUser, encoded: "YOU ARE FEW STEPS BACK TO GET BETTER LUCK", original, time: timeString });
                 });
             }).catch(error => {
                 alert("Upload failed: " + error.message);
